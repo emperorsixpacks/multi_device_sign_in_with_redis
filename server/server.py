@@ -308,7 +308,9 @@ def index_route():
 
 
 @app.post("/login")
-def login_route(form: Annotated[LoginForm, Depends()], request: Request):
+def login_route(
+    form: Annotated[LoginForm, Depends()], request: Request
+) -> JSONResponse:
     """
     Handles a login request.
 
@@ -321,29 +323,42 @@ def login_route(form: Annotated[LoginForm, Depends()], request: Request):
     """
     username = form.username
     password = form.password
+
+    # Authenticate the user
     user = authenticate_user(username, password)
     if user is None:
         return JSONResponse(
-            status_code=404, content={"message": "Invalid ssername or password"}
+            status_code=404, content={"message": "Invalid username or password"}
         )
+
+    # Create a new session
     session = Session(
         device_name=request.headers.get("User-Agent"), ip_address=request.client.host
     )
+
+    # Get the user from the cache
     user_from_cache = get_user_from_cache(username)
 
     if user_from_cache is None:
         return JSONResponse(content={"message": "one minute"}, status_code=404)
 
+    # Get the user's sessions
     user_sessions = get_sessions(userid=username)
+
+    # Add the new session to the user's sessions
     try:
         user_sessions.append(session)
     except AttributeError:
         user_sessions = [session]
 
+    # Update the user in the cache
     user_from_cache.sessions = user_sessions
     update_user_cache(userid=username, new_data=user_from_cache)
 
+    # Create a JWT token
     token = create_token(Token(user=username, session_id=session.session_id))
+
+    # Return the JWT token
     return JSONResponse(content={"message": "logged in", "token": token})
 
 
@@ -370,24 +385,36 @@ def get_user(request : Request):
 
 @app.post("/logout")
 def logout_route(request: Request):
-    
     """
     Handles a request to log out the user.
 
+    This endpoint will delete the user's session from the cache and return a JSON response with a message indicating that the user has been logged out.
+
     Args:
-    request (Request): The request containing the Authorization header with the JWT token
+        request (Request): The request containing the Authorization header with the JWT token
 
     Returns:
-    JSONResponse: A JSON response containing the message "logged out" if the token is valid, otherwise a JSONResponse with a 404 status code and a message indicating that the token is invalid
+        JSONResponse: A JSON response containing the message "logged out" if the token is valid, otherwise a JSONResponse with a 404 status code and a message indicating that the token is invalid
     """
-    _, token = get_authorization_scheme_param(request .headers.get("Authorization"))
+    # Get the JWT token from the Authorization header
+    _, token = get_authorization_scheme_param(request.headers.get("Authorization"))
+
+    # Decode the JWT token
     payload = decode_token(token)
+
+    # Check if the token is invalid
     if payload is None:
         return JSONResponse(content={"message": "Invalid token"}, status_code=404)
+
+    # Check if the user or session does not exist
     if get_single_session(userid=payload.user, session_id=payload.session_id) is None or get_user_from_cache(
         userid=payload.user) is None:
-        return JSONResponse(content={"message": "Invalid token"}, status_code=404) 
+        return JSONResponse(content={"message": "Invalid token"}, status_code=404)
+
+    # Delete the session from the cache
     delete_session(payload.user, payload.session_id)
+
+    # Return a JSON response with a message indicating that the user has been logged out
     return JSONResponse(content={"message": "logged out"})
 
 

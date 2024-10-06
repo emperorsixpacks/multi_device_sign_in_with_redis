@@ -188,6 +188,20 @@ python-versions = ">=3.8"
 typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 
 [[package]]
+name = "pyjwt"
+version = "2.9.0"
+description = "JSON Web Token implementation in Python"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.extras]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["sphinx", "sphinx-rtd-theme", "zope.interface", "cryptography (>=3.4.0)", "pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)", "pre-commit"]
+docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
+tests = ["pytest (>=6.0.0,<7.0.0)", "coverage[toml] (==5.0.4)"]
+
+[[package]]
 name = "python-dotenv"
 version = "1.0.1"
 description = "Read key-value pairs from a .env file and set them as environment variables"
@@ -197,6 +211,14 @@ python-versions = ">=3.8"
 
 [package.extras]
 cli = ["click (>=5.0)"]
+
+[[package]]
+name = "python-multipart"
+version = "0.0.12"
+description = "A streaming multipart parser for Python"
+category = "main"
+optional = false
+python-versions = ">=3.8"
 
 [[package]]
 name = "redis"
@@ -261,7 +283,7 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "202334d6adb7efc6503cb51b11c7a14a964fd158830641e7454b6344b33e76ec"
+content-hash = "3deecb76adc75eaad8b3889c87e9af31fac9fe6584258b3e6bb979d4820d64f5"
 
 [metadata.files]
 annotated-types = []
@@ -280,7 +302,9 @@ pathspec = []
 platformdirs = []
 pydantic = []
 pydantic-core = []
+pyjwt = []
 python-dotenv = []
+python-multipart = []
 redis = []
 sniffio = []
 starlette = []

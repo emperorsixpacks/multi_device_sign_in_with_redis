@@ -12,6 +12,8 @@ bcrypt = "^4.2.0"
 python-dotenv = "^1.0.1"
 black = "^24.8.0"
 uvicorn = "^0.31.0"
+PyJWT = "^2.9.0"
+python-multipart = "^0.0.12"
 
 [tool.poetry.dev-dependencies]
 

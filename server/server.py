@@ -245,6 +245,15 @@ class Token:
 
 
 def create_token(data: Token):
+    """
+    Creates a JWT token from the given data.
+
+    Args:
+    data (Token): The data to be encoded in the JWT token
+
+    Returns:
+    str: The JWT token
+    """
     to_encode = data.__dict__
     token_ttl_expire = datetime.now() + timedelta(days=ACCESS_TOKEN_TTL_DAYS)
     to_encode.update({"exp": token_ttl_expire})
@@ -253,6 +262,15 @@ def create_token(data: Token):
 
 
 def decode_token(payload) -> Token:
+    """
+    Decodes a JWT token and returns the contained data as a Token object.
+
+    Args:
+        payload (str): The JWT token to be decoded
+
+    Returns:
+        Token | None: The decoded token as a Token object, or None if the token is expired
+    """
     try:
         data = jwt.decode(payload, SECRET, algorithms=["HS256"])
     except ExpiredSignatureError:
@@ -291,6 +309,16 @@ def index_route():
 
 @app.post("/login")
 def login_route(form: Annotated[LoginForm, Depends()], request: Request):
+    """
+    Handles a login request.
+
+    Args:
+    form (Annotated[LoginForm, Depends()]): The form data containing the username and password
+    request (Request): The request containing the User-Agent header and client host
+
+    Returns:
+    JSONResponse: A JSON response containing a JWT token if the login is successful, otherwise a JSONResponse with a 404 status code and a message indicating that the username or password is invalid
+    """
     username = form.username
     password = form.password
     user = authenticate_user(username, password)
@@ -321,6 +349,15 @@ def login_route(form: Annotated[LoginForm, Depends()], request: Request):
 
 @app.get("/me")
 def get_user(request : Request):
+    """
+    Handles a request to get the user from the token.
+
+    Args:
+    request (Request): The request containing the Authorization header with the JWT token
+
+    Returns:
+    JSONResponse: A JSON response containing the user data if the token is valid, otherwise a JSONResponse with a 404 status code and a message indicating that the token is invalid
+    """
     _, token = get_authorization_scheme_param(request .headers.get("Authorization"))
     payload = decode_token(token)
     if payload is None:
@@ -334,6 +371,15 @@ def get_user(request : Request):
 @app.post("/logout")
 def logout_route(request: Request):
     
+    """
+    Handles a request to log out the user.
+
+    Args:
+    request (Request): The request containing the Authorization header with the JWT token
+
+    Returns:
+    JSONResponse: A JSON response containing the message "logged out" if the token is valid, otherwise a JSONResponse with a 404 status code and a message indicating that the token is invalid
+    """
     _, token = get_authorization_scheme_param(request .headers.get("Authorization"))
     payload = decode_token(token)
     if payload is None:

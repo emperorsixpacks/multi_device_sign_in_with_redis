@@ -14,7 +14,7 @@ redis_client = Redis(REDIS_HOST, int(REDIS_PORT))
 
 # Setting up demo user
 from typing import List
-from uuid import uuid4, UUID
+from uuid import uuid4
 import json
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
@@ -34,16 +34,36 @@ def create_new_session_id():
 
 @dataclass
 class Session:
+    """
+    A class to represent a user's session.
+
+    Attributes:
+    session_id (str): A unique id for the session.
+    device_name (str): The name of the device used for the session.
+    ip_address (str): The ip address of the device used for the session.
+    device_id (str): A unique id for the device.
+    date_created (datetime): The date and time the session was created.
+    """
     session_id: str = field(default_factory=create_new_session_id)
     device_name: str = field(default=None)
     ip_address: str = field(default=None)
     device_id: str = field(default_factory=generate_new_device_id)
-
     date_created: datetime = field(default_factory=now_date_time_to_str)
 
 
 @dataclass
 class User:
+    """
+    A class to represent a user.
+
+    Attributes:
+    username (str): The username of the user.
+    email (str): The email of the user.
+    password (str): The password of the user.
+    bio (str): The bio of the user.
+    sessions (List[Session] | None): A list of Session objects representing the user's sessions.
+    """
+
     username: str = field(default=None)
     email: str = field(default=None)
     password: str = field(default=None)
@@ -52,6 +72,12 @@ class User:
 
     @property
     def __dict__(self):
+        """
+        Returns a dictionary representing the user.
+
+        Returns:
+        Dict[str, Any]: A dictionary representing the user
+        """
         return {
             "username": self.username,
             "email": self.email,
@@ -61,19 +87,49 @@ class User:
         }
 
     def return_session_dict(self):
+        """
+        Returns a list of dictionaries representing the user's sessions.
+
+        If the sessions field is a list of Session objects, returns a list of dictionaries
+        where each dictionary is the __dict__ of a Session object. If the sessions field
+        is a list of dictionaries, returns the list as is.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries representing the user's sessions
+        """
         try:
             return [session.__dict__ for session in self.sessions]
         except AttributeError:
             return [session for session in self.sessions]
 
 
+# Utiliy finctions 
 def return_user_from_db(username) -> User | None:
+    """
+    Retrieves a user from the database by their username.
+
+    Args:
+    username (str): The username of the user to be retrieved
+
+    Returns:
+    User | None: The user if found, None otherwise
+    """
     with open("demo_users.json", "r", encoding="utf-8") as file:
         user = json.load(file).get(str(username), None)
         return User(**user) or None
 
 
 def authenticate_user(username, password) -> bool | None:
+    """
+    Authenticate a user by their username and password.
+
+    Args:
+    username (str): The username to be authenticated
+    password (str): The password to be authenticated
+
+    Returns:
+    bool | None: True if authentication is successful, None if the user is invalid
+    """
     user = return_user_from_db(username=username)
     if not password == user.password:
         return None
@@ -81,11 +137,29 @@ def authenticate_user(username, password) -> bool | None:
 
 
 def get_user_from_cache(userid) -> User | None:
+    """
+    Retrieves a user from the redis cache.
+
+    Args:
+    userid (str): The userid of the user
+
+    Returns:
+    User | None: The user if found, None otherwise
+    """
     user = redis_client.get(name=userid)
     return User(**json.loads(user)) or None
 
 
 def get_sessions(userid) -> List[Session] | None:
+    """
+    Retrieves a list of all sessions for a given user.
+
+    Args:
+    userid (str): The userid of the user
+
+    Returns:
+    List[Session] | None: A list of all sessions for the user, or None if the user does not exist
+    """
     user_sessions = get_user_from_cache(userid=userid).sessions
 
     if user_sessions is None:  # This is the users first time logging in
@@ -94,11 +168,32 @@ def get_sessions(userid) -> List[Session] | None:
     return [Session(**session) for session in user_sessions] or None
 
 def get_single_session(userid, session_id) -> Session | None:
+    """
+    Retrieves a single session from a users sessions by session_id.
+
+    Args:
+    userid (str): The userid of the user
+    session_id (str): The session_id of the session to be retrieved
+
+    Returns:
+    Session | None: The session if found, None otherwise
+    """
     user_sessions = get_sessions(userid=userid)
 
     return next((session for session in user_sessions if session.session_id == session_id), None)
 
 def update_user_cache(userid, new_data: User) -> User:
+    
+    """
+    Updates a user in the cache with new data.
+
+    Args:
+    userid (str): The userid of the user
+    new_data (User): The new data to be updated
+
+    Returns:
+    User: The user with the new data
+    """
     
     user = return_user_from_db(username=userid)
 
@@ -111,6 +206,16 @@ def update_user_cache(userid, new_data: User) -> User:
 
 
 def delete_session(userid, session_id) -> bool | None:
+    """
+    Delete a session from the user's cache.
+
+    Args:
+    userid (str): The userid of the user
+    session_id (str): The session_id of the session to be deleted
+
+    Returns:
+    bool | None: True if deletion is successful, None if the user or session does not exist
+    """
     user = get_user_from_cache(userid=userid)
 
     if user is None:
